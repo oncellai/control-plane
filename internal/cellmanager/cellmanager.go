@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/oncellai/control-plane/internal/hostclient"
+	pb "github.com/oncellai/control-plane/internal/hostclient/pb"
 	"github.com/oncellai/control-plane/internal/router"
 	"github.com/oncellai/control-plane/internal/scheduler"
 )
@@ -13,10 +15,15 @@ import (
 type CellManager struct {
 	router    *router.Router
 	scheduler *scheduler.Scheduler
+	hosts     *hostclient.Pool
 }
 
 func New(r *router.Router, s *scheduler.Scheduler) *CellManager {
-	return &CellManager{router: r, scheduler: s}
+	return &CellManager{
+		router:    r,
+		scheduler: s,
+		hosts:     hostclient.NewPool(),
+	}
 }
 
 type CreateResult struct {
@@ -30,32 +37,57 @@ func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developer
 	// Pick a host
 	host, err := cm.scheduler.PickHost(ctx, cellID)
 	if err != nil {
-		return nil, fmt.Errorf("scheduler: %w", err)
+		// Try force reclaim if no capacity
+		if _, reclaimErr := cm.ForceReclaim(ctx); reclaimErr != nil {
+			return nil, fmt.Errorf("scheduler: %w (reclaim also failed: %v)", err, reclaimErr)
+		}
+		// Retry after reclaim
+		host, err = cm.scheduler.PickHost(ctx, cellID)
+		if err != nil {
+			return nil, fmt.Errorf("scheduler: %w", err)
+		}
 	}
 
-	// TODO: gRPC call to Host Agent to create the cell
-	// For now, just register the route
-	port := 8400 // TODO: get from Host Agent response
+	// Connect to Host Agent
+	client, err := cm.hosts.Get(host.ID, host.Address, host.GRPCPort)
+	if err != nil {
+		return nil, fmt.Errorf("connect to host %s: %w", host.ID, err)
+	}
 
+	// Create cell via gRPC
+	resp, err := client.CreateCell(ctx, &pb.CreateCellRequest{
+		CellId:      cellID,
+		CustomerId:  customerID,
+		DeveloperId: developerID,
+		Spec: &pb.CellSpec{
+			CpuMillicores: 4000,
+			MemoryMb:      8192,
+			StorageGb:     50,
+		},
+		AgentImage: "default",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create cell: %w", err)
+	}
+
+	// Register route
 	route := router.CellRoute{
 		Host:   host.Address,
-		Port:   port,
+		Port:   int(resp.Port),
 		Status: "active",
 		CellID: cellID,
 	}
-
 	if err := cm.router.SetRoute(ctx, cellID, route); err != nil {
 		return nil, fmt.Errorf("set route: %w", err)
 	}
-
 	cm.router.SetLastActive(ctx, cellID)
 
-	slog.Info("cell created", "cell_id", cellID, "host", host.ID, "port", port)
+	slog.Info("cell created", "cell_id", cellID, "host", host.ID, "port", resp.Port)
 
 	return &CreateResult{
 		CellID: cellID,
 		HostID: host.ID,
-		Port:   port,
+		Port:   int(resp.Port),
 		Status: "active",
 	}, nil
 }
@@ -66,7 +98,16 @@ func (cm *CellManager) Pause(ctx context.Context, cellID string) error {
 		return fmt.Errorf("cell not found: %s", cellID)
 	}
 
-	// TODO: gRPC call to Host Agent to pause (snapshot + stop)
+	// Find host client from route
+	client, err := cm.hostForRoute(route)
+	if err != nil {
+		return fmt.Errorf("connect to host: %w", err)
+	}
+
+	// Pause via gRPC (Host Agent snapshots to S3, then stops sandbox)
+	if _, err := client.PauseCell(ctx, cellID); err != nil {
+		return fmt.Errorf("pause cell: %w", err)
+	}
 
 	route.Status = "paused"
 	cm.router.SetRoute(ctx, cellID, *route)
@@ -81,24 +122,48 @@ func (cm *CellManager) Resume(ctx context.Context, cellID string) (*CreateResult
 		return nil, fmt.Errorf("cell not found: %s", cellID)
 	}
 
-	// TODO: gRPC call to Host Agent to resume
+	// Find host client from route
+	client, err := cm.hostForRoute(route)
+	if err != nil {
+		return nil, fmt.Errorf("connect to host: %w", err)
+	}
+
+	// Resume via gRPC (Host Agent checks NVMe cache or restores from S3)
+	resp, err := client.ResumeCell(ctx, cellID)
+	if err != nil {
+		return nil, fmt.Errorf("resume cell: %w", err)
+	}
 
 	route.Status = "active"
+	route.Port = int(resp.Port)
 	cm.router.SetRoute(ctx, cellID, *route)
 	cm.router.SetLastActive(ctx, cellID)
 
-	slog.Info("cell resumed", "cell_id", cellID)
+	slog.Info("cell resumed", "cell_id", cellID, "port", resp.Port)
 
 	return &CreateResult{
 		CellID: cellID,
-		HostID: "host-1", // TODO: from route
-		Port:   route.Port,
+		HostID: "host-1",
+		Port:   int(resp.Port),
 		Status: "active",
 	}, nil
 }
 
 func (cm *CellManager) Delete(ctx context.Context, cellID string) error {
-	// TODO: gRPC call to Host Agent to delete
+	route, err := cm.router.GetRoute(ctx, cellID)
+	if err != nil || route == nil {
+		// Already gone — just clean up routing
+		cm.router.DeleteRoute(ctx, cellID)
+		return nil
+	}
+
+	// Delete via gRPC (Host Agent wipes NVMe, removes sandbox)
+	client, err := cm.hostForRoute(route)
+	if err == nil {
+		if err := client.DeleteCell(ctx, cellID); err != nil {
+			slog.Warn("delete cell on host failed", "cell_id", cellID, "err", err)
+		}
+	}
 
 	cm.router.DeleteRoute(ctx, cellID)
 
@@ -110,9 +175,7 @@ func (cm *CellManager) GetRoute(ctx context.Context, cellID string) (*router.Cel
 	return cm.router.GetRoute(ctx, cellID)
 }
 
-// ForceReclaim pauses the least recently active cell on any host to free capacity.
-// Used when all hosts are full and a new cell needs to be created.
-// Uses a shorter grace period (5 min) than the normal idle checker (30 min).
+// ForceReclaim pauses the least recently active cell to free capacity.
 func (cm *CellManager) ForceReclaim(ctx context.Context) (string, error) {
 	cells, err := cm.router.GetActiveCells(ctx)
 	if err != nil {
@@ -123,9 +186,8 @@ func (cm *CellManager) ForceReclaim(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("no active cells to reclaim")
 	}
 
-	// Find the least recently active cell
 	var oldestID string
-	var oldestTime int64 = 1<<62
+	var oldestTime int64 = 1<<62 - 1
 
 	for _, cellID := range cells {
 		lastActive, err := cm.router.GetLastActive(ctx, cellID)
@@ -142,7 +204,6 @@ func (cm *CellManager) ForceReclaim(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("could not find reclaimable cell")
 	}
 
-	// Only reclaim if idle for at least 5 minutes (force reclaim grace period)
 	now := time.Now().Unix()
 	idleSecs := now - oldestTime
 	if idleSecs < 300 {
@@ -159,7 +220,12 @@ func (cm *CellManager) ForceReclaim(ctx context.Context) (string, error) {
 }
 
 // UpdateHeartbeat updates the last_active_at timestamp for a cell.
-// Called by the API Server on every request and by the SDK heartbeat.
 func (cm *CellManager) UpdateHeartbeat(ctx context.Context, cellID string) error {
 	return cm.router.SetLastActive(ctx, cellID)
+}
+
+// hostForRoute returns a gRPC client for the host in the route.
+// MVP: single host, port 50051. Later: look up from host registry.
+func (cm *CellManager) hostForRoute(route *router.CellRoute) (*hostclient.Client, error) {
+	return cm.hosts.Get("host-1", route.Host, 50051)
 }

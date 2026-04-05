@@ -1,0 +1,89 @@
+syntax = "proto3";
+package oncell.hostagent;
+option go_package = "github.com/oncellai/control-plane/internal/hostclient/pb";
+
+service HostAgent {
+  rpc CreateCell(CreateCellRequest) returns (CellResponse);
+  rpc StartCell(CellId) returns (CellResponse);
+  rpc PauseCell(CellId) returns (CellResponse);
+  rpc ResumeCell(CellId) returns (CellResponse);
+  rpc DeleteCell(CellId) returns (CellResponse);
+  rpc GetCellStatus(CellId) returns (CellResponse);
+  rpc SnapshotCell(CellId) returns (SnapshotResponse);
+  rpc ListCells(Empty) returns (ListCellsResponse);
+  rpc GetHostMetrics(Empty) returns (HostMetrics);
+}
+
+message Empty {}
+
+message CellId {
+  string cell_id = 1;
+}
+
+message CellSpec {
+  int32 cpu_millicores = 1;   // 4000 = 4 cores
+  int32 memory_mb = 2;        // 8192 = 8 GB
+  int32 storage_gb = 3;       // 50 = 50 GB
+  repeated string packages = 4;
+  NetworkConfig network = 5;
+}
+
+message NetworkConfig {
+  string egress = 1;              // "blocked" or "open"
+  repeated string allow = 2;     // ["github.com", "api.openai.com"]
+}
+
+message CreateCellRequest {
+  string cell_id = 1;
+  string customer_id = 2;
+  string developer_id = 3;
+  CellSpec spec = 4;
+  string agent_image = 5;
+  map<string, string> config = 6;   // customer config
+  map<string, string> secrets = 7;  // encrypted secrets
+}
+
+message CellResponse {
+  string cell_id = 1;
+  CellStatus status = 2;
+  int32 port = 3;
+  string error = 4;
+}
+
+message CellStatus {
+  string cell_id = 1;
+  string state = 2;               // "creating", "active", "paused", "deleted"
+  int32 port = 3;
+  int64 created_at = 4;
+  int64 last_active_at = 5;
+  int64 paused_at = 6;
+  CellResourceUsage resources = 7;
+}
+
+message CellResourceUsage {
+  double cpu_percent = 1;
+  int64 memory_bytes = 2;
+  int64 storage_bytes = 3;
+}
+
+message SnapshotResponse {
+  string cell_id = 1;
+  string snapshot_path = 2;  // S3 path
+  int64 size_bytes = 3;
+}
+
+message ListCellsResponse {
+  repeated CellStatus cells = 1;
+}
+
+message HostMetrics {
+  int32 cpu_total_millicores = 1;
+  int32 cpu_used_millicores = 2;
+  int64 memory_total_bytes = 3;
+  int64 memory_used_bytes = 4;
+  int64 storage_total_bytes = 5;
+  int64 storage_used_bytes = 6;
+  int32 active_cells = 7;
+  int32 paused_cells = 8;
+  repeated string cached_customers = 9;
+}
