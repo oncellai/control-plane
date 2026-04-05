@@ -27,6 +27,8 @@ func NewHandler(cm *cellmanager.CellManager, r *router.Router, s *scheduler.Sche
 	mux.HandleFunc("POST /cells/delete", h.deleteCell)
 	mux.HandleFunc("GET /cells/{id}/status", h.cellStatus)
 	mux.HandleFunc("GET /cells/route/{customer_id}", h.cellRoute)
+	mux.HandleFunc("POST /cells/{id}/heartbeat", h.heartbeat)
+	mux.HandleFunc("POST /cells/reclaim", h.forceReclaim)
 
 	return mux
 }
@@ -126,6 +128,24 @@ func (h *Handler) cellRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, route)
+}
+
+func (h *Handler) heartbeat(w http.ResponseWriter, r *http.Request) {
+	cellID := r.PathValue("id")
+	if err := h.cm.UpdateHeartbeat(r.Context(), cellID); err != nil {
+		writeJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, 200, map[string]string{"ok": "true"})
+}
+
+func (h *Handler) forceReclaim(w http.ResponseWriter, r *http.Request) {
+	reclaimedID, err := h.cm.ForceReclaim(r.Context())
+	if err != nil {
+		writeJSON(w, 409, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, 200, map[string]string{"reclaimed_cell_id": reclaimedID})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

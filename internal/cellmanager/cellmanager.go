@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/oncellai/control-plane/internal/router"
 	"github.com/oncellai/control-plane/internal/scheduler"
@@ -107,4 +108,58 @@ func (cm *CellManager) Delete(ctx context.Context, cellID string) error {
 
 func (cm *CellManager) GetRoute(ctx context.Context, cellID string) (*router.CellRoute, error) {
 	return cm.router.GetRoute(ctx, cellID)
+}
+
+// ForceReclaim pauses the least recently active cell on any host to free capacity.
+// Used when all hosts are full and a new cell needs to be created.
+// Uses a shorter grace period (5 min) than the normal idle checker (30 min).
+func (cm *CellManager) ForceReclaim(ctx context.Context) (string, error) {
+	cells, err := cm.router.GetActiveCells(ctx)
+	if err != nil {
+		return "", fmt.Errorf("list active cells: %w", err)
+	}
+
+	if len(cells) == 0 {
+		return "", fmt.Errorf("no active cells to reclaim")
+	}
+
+	// Find the least recently active cell
+	var oldestID string
+	var oldestTime int64 = 1<<62
+
+	for _, cellID := range cells {
+		lastActive, err := cm.router.GetLastActive(ctx, cellID)
+		if err != nil {
+			continue
+		}
+		if lastActive < oldestTime {
+			oldestTime = lastActive
+			oldestID = cellID
+		}
+	}
+
+	if oldestID == "" {
+		return "", fmt.Errorf("could not find reclaimable cell")
+	}
+
+	// Only reclaim if idle for at least 5 minutes (force reclaim grace period)
+	now := time.Now().Unix()
+	idleSecs := now - oldestTime
+	if idleSecs < 300 {
+		return "", fmt.Errorf("no cells idle long enough to reclaim (oldest idle: %ds)", idleSecs)
+	}
+
+	slog.Info("force reclaim: pausing least active cell", "cell_id", oldestID, "idle_secs", idleSecs)
+
+	if err := cm.Pause(ctx, oldestID); err != nil {
+		return "", fmt.Errorf("failed to pause %s: %w", oldestID, err)
+	}
+
+	return oldestID, nil
+}
+
+// UpdateHeartbeat updates the last_active_at timestamp for a cell.
+// Called by the API Server on every request and by the SDK heartbeat.
+func (cm *CellManager) UpdateHeartbeat(ctx context.Context, cellID string) error {
+	return cm.router.SetLastActive(ctx, cellID)
 }
