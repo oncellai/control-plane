@@ -14,7 +14,7 @@ func Load() *Config {
 	return &Config{
 		Port:                 envOr("PORT", "4000"),
 		RedisURL:             envOr("REDIS_URL", "localhost:6379"),
-		IdleTimeoutSecs:      envInt("IDLE_TIMEOUT_SECS", 1800),
+		IdleTimeoutSecs:      envInt("IDLE_TIMEOUT_SECS", 900), // 15 minutes
 		HealthCheckInterval:  envInt("HEALTH_CHECK_INTERVAL", 10),
 		SnapshotIntervalSecs: envInt("SNAPSHOT_INTERVAL_SECS", 3600),
 	}
