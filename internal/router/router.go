@@ -10,10 +10,11 @@ import (
 )
 
 type CellRoute struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Status   string `json:"status"`
-	CellID   string `json:"cell_id"`
+	Host      string `json:"host"`
+	Port      int    `json:"port"`
+	Status    string `json:"status"`
+	CellID    string `json:"cell_id"`
+	Permanent bool   `json:"permanent"`
 }
 
 type HostMetrics struct {

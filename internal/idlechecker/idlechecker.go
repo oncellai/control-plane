@@ -46,6 +46,15 @@ func (ic *IdleChecker) check(ctx context.Context) {
 	now := time.Now().Unix()
 
 	for _, cellID := range cells {
+		// Check if cell is permanent — never evict permanent cells
+		route, routeErr := ic.router.GetRoute(ctx, cellID)
+		if routeErr != nil {
+			continue
+		}
+		if route != nil && route.Permanent {
+			continue
+		}
+
 		lastActive, err := ic.router.GetLastActive(ctx, cellID)
 		if err != nil {
 			continue

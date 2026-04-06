@@ -31,6 +31,7 @@ func NewHandler(cm *cellmanager.CellManager, r *router.Router, s *scheduler.Sche
 	mux.HandleFunc("POST /cells/reclaim", h.forceReclaim)
 	mux.HandleFunc("GET /cells/counts", h.cellCounts)
 	mux.HandleFunc("POST /hosts/register", h.registerHost)
+	mux.HandleFunc("POST /cells/set-permanent", h.setPermanent)
 
 	return mux
 }
@@ -44,13 +45,29 @@ func (h *Handler) createCell(w http.ResponseWriter, r *http.Request) {
 		CellID      string `json:"cell_id"`
 		CustomerID  string `json:"customer_id"`
 		DeveloperID string `json:"developer_id"`
+		Permanent   bool   `json:"permanent"`
+		Spec        *struct {
+			CPUMillicores int32 `json:"cpu_millicores"`
+			MemoryMB      int32 `json:"memory_mb"`
+			StorageGB     int32 `json:"storage_gb"`
+		} `json:"spec"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, 400, map[string]string{"error": "invalid json"})
 		return
 	}
 
-	result, err := h.cm.Create(r.Context(), req.CellID, req.CustomerID, req.DeveloperID)
+	// Default spec if not provided
+	cpuMillicores := int32(1000)
+	memoryMB := int32(1024)
+	storageGB := int32(10)
+	if req.Spec != nil {
+		if req.Spec.CPUMillicores > 0 { cpuMillicores = req.Spec.CPUMillicores }
+		if req.Spec.MemoryMB > 0 { memoryMB = req.Spec.MemoryMB }
+		if req.Spec.StorageGB > 0 { storageGB = req.Spec.StorageGB }
+	}
+
+	result, err := h.cm.Create(r.Context(), req.CellID, req.CustomerID, req.DeveloperID, cpuMillicores, memoryMB, storageGB, req.Permanent)
 	if err != nil {
 		slog.Error("create cell failed", "err", err)
 		writeJSON(w, 500, map[string]string{"error": err.Error()})
@@ -148,6 +165,32 @@ func (h *Handler) forceReclaim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]string{"reclaimed_cell_id": reclaimedID})
+}
+
+func (h *Handler) setPermanent(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		CellID    string `json:"cell_id"`
+		Permanent bool   `json:"permanent"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, 400, map[string]string{"error": "invalid json"})
+		return
+	}
+
+	route, err := h.router.GetRoute(r.Context(), req.CellID)
+	if err != nil || route == nil {
+		writeJSON(w, 404, map[string]string{"error": "cell not found"})
+		return
+	}
+
+	route.Permanent = req.Permanent
+	if err := h.router.SetRoute(r.Context(), req.CellID, *route); err != nil {
+		writeJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	slog.Info("cell permanent flag updated", "cell_id", req.CellID, "permanent", req.Permanent)
+	writeJSON(w, 200, map[string]string{"ok": "true"})
 }
 
 func (h *Handler) registerHost(w http.ResponseWriter, r *http.Request) {

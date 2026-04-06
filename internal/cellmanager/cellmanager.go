@@ -33,7 +33,7 @@ type CreateResult struct {
 	Status string `json:"status"`
 }
 
-func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developerID string) (*CreateResult, error) {
+func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developerID string, cpuMillicores, memoryMB, storageGB int32, permanent bool) (*CreateResult, error) {
 	// Pick a host
 	host, err := cm.scheduler.PickHost(ctx, cellID)
 	if err != nil {
@@ -54,15 +54,15 @@ func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developer
 		return nil, fmt.Errorf("connect to host %s: %w", host.ID, err)
 	}
 
-	// Create cell via gRPC
+	// Create cell via gRPC with spec from tier
 	resp, err := client.CreateCell(ctx, &pb.CreateCellRequest{
 		CellId:      cellID,
 		CustomerId:  customerID,
 		DeveloperId: developerID,
 		Spec: &pb.CellSpec{
-			CpuMillicores: 4000,
-			MemoryMb:      8192,
-			StorageGb:     50,
+			CpuMillicores: cpuMillicores,
+			MemoryMb:      memoryMB,
+			StorageGb:     storageGB,
 		},
 		AgentImage: "default",
 	})
@@ -70,12 +70,13 @@ func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developer
 		return nil, fmt.Errorf("create cell: %w", err)
 	}
 
-	// Register route
+	// Register route with permanent flag
 	route := router.CellRoute{
-		Host:   host.Address,
-		Port:   int(resp.Port),
-		Status: "active",
-		CellID: cellID,
+		Host:      host.Address,
+		Port:      int(resp.Port),
+		Status:    "active",
+		CellID:    cellID,
+		Permanent: permanent,
 	}
 	if err := cm.router.SetRoute(ctx, cellID, route); err != nil {
 		return nil, fmt.Errorf("set route: %w", err)
