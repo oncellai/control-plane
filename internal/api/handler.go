@@ -25,9 +25,9 @@ func NewHandler(cm *cellmanager.CellManager, r *router.Router, s *scheduler.Sche
 	mux.HandleFunc("POST /cells/pause", h.pauseCell)
 	mux.HandleFunc("POST /cells/resume", h.resumeCell)
 	mux.HandleFunc("POST /cells/delete", h.deleteCell)
-	mux.HandleFunc("GET /cells/{id}/status", h.cellStatus)
+	mux.HandleFunc("GET /cells/status/{id}", h.cellStatus)
 	mux.HandleFunc("GET /cells/route/{customer_id}", h.cellRoute)
-	mux.HandleFunc("POST /cells/{id}/heartbeat", h.heartbeat)
+	mux.HandleFunc("POST /cells/heartbeat/{id}", h.heartbeat)
 	mux.HandleFunc("POST /cells/reclaim", h.forceReclaim)
 
 	return mux
