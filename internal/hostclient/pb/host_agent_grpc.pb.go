@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v7.34.1
-// source: host_agent.proto
+// source: proto/host_agent.proto
 
 package pb
 
@@ -421,5 +421,5 @@ var HostAgent_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "host_agent.proto",
+	Metadata: "proto/host_agent.proto",
 }

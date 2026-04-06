@@ -33,7 +33,7 @@ type CreateResult struct {
 	Status string `json:"status"`
 }
 
-func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developerID string, cpuMillicores, memoryMB, storageGB int32, permanent bool) (*CreateResult, error) {
+func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developerID string, cpuMillicores, memoryMB, storageGB int32, permanent bool, secrets map[string]string) (*CreateResult, error) {
 	// Pick a host
 	host, err := cm.scheduler.PickHost(ctx, cellID)
 	if err != nil {
@@ -65,6 +65,8 @@ func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developer
 			StorageGb:     storageGB,
 		},
 		AgentImage: "default",
+		Permanent:  permanent,
+		Secrets:    secrets,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create cell: %w", err)

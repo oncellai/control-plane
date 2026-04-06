@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.34.1
-// source: host_agent.proto
+// source: proto/host_agent.proto
 
 package pb
 
@@ -29,7 +29,7 @@ type Empty struct {
 
 func (x *Empty) Reset() {
 	*x = Empty{}
-	mi := &file_host_agent_proto_msgTypes[0]
+	mi := &file_proto_host_agent_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -41,7 +41,7 @@ func (x *Empty) String() string {
 func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[0]
+	mi := &file_proto_host_agent_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -54,7 +54,7 @@ func (x *Empty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Empty.ProtoReflect.Descriptor instead.
 func (*Empty) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{0}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{0}
 }
 
 type CellId struct {
@@ -66,7 +66,7 @@ type CellId struct {
 
 func (x *CellId) Reset() {
 	*x = CellId{}
-	mi := &file_host_agent_proto_msgTypes[1]
+	mi := &file_proto_host_agent_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -78,7 +78,7 @@ func (x *CellId) String() string {
 func (*CellId) ProtoMessage() {}
 
 func (x *CellId) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[1]
+	mi := &file_proto_host_agent_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -91,7 +91,7 @@ func (x *CellId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CellId.ProtoReflect.Descriptor instead.
 func (*CellId) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{1}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *CellId) GetCellId() string {
@@ -114,7 +114,7 @@ type CellSpec struct {
 
 func (x *CellSpec) Reset() {
 	*x = CellSpec{}
-	mi := &file_host_agent_proto_msgTypes[2]
+	mi := &file_proto_host_agent_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -126,7 +126,7 @@ func (x *CellSpec) String() string {
 func (*CellSpec) ProtoMessage() {}
 
 func (x *CellSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[2]
+	mi := &file_proto_host_agent_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -139,7 +139,7 @@ func (x *CellSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CellSpec.ProtoReflect.Descriptor instead.
 func (*CellSpec) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{2}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CellSpec) GetCpuMillicores() int32 {
@@ -187,7 +187,7 @@ type NetworkConfig struct {
 
 func (x *NetworkConfig) Reset() {
 	*x = NetworkConfig{}
-	mi := &file_host_agent_proto_msgTypes[3]
+	mi := &file_proto_host_agent_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -199,7 +199,7 @@ func (x *NetworkConfig) String() string {
 func (*NetworkConfig) ProtoMessage() {}
 
 func (x *NetworkConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[3]
+	mi := &file_proto_host_agent_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -212,7 +212,7 @@ func (x *NetworkConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NetworkConfig.ProtoReflect.Descriptor instead.
 func (*NetworkConfig) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{3}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *NetworkConfig) GetEgress() string {
@@ -238,13 +238,14 @@ type CreateCellRequest struct {
 	AgentImage    string                 `protobuf:"bytes,5,opt,name=agent_image,json=agentImage,proto3" json:"agent_image,omitempty"`
 	Config        map[string]string      `protobuf:"bytes,6,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`   // customer config
 	Secrets       map[string]string      `protobuf:"bytes,7,rep,name=secrets,proto3" json:"secrets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // encrypted secrets
+	Permanent     bool                   `protobuf:"varint,8,opt,name=permanent,proto3" json:"permanent,omitempty"`                                                                      // auto-restart on crash if true
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateCellRequest) Reset() {
 	*x = CreateCellRequest{}
-	mi := &file_host_agent_proto_msgTypes[4]
+	mi := &file_proto_host_agent_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -256,7 +257,7 @@ func (x *CreateCellRequest) String() string {
 func (*CreateCellRequest) ProtoMessage() {}
 
 func (x *CreateCellRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[4]
+	mi := &file_proto_host_agent_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -269,7 +270,7 @@ func (x *CreateCellRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCellRequest.ProtoReflect.Descriptor instead.
 func (*CreateCellRequest) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{4}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateCellRequest) GetCellId() string {
@@ -321,6 +322,13 @@ func (x *CreateCellRequest) GetSecrets() map[string]string {
 	return nil
 }
 
+func (x *CreateCellRequest) GetPermanent() bool {
+	if x != nil {
+		return x.Permanent
+	}
+	return false
+}
+
 type CellResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	CellId        string                 `protobuf:"bytes,1,opt,name=cell_id,json=cellId,proto3" json:"cell_id,omitempty"`
@@ -333,7 +341,7 @@ type CellResponse struct {
 
 func (x *CellResponse) Reset() {
 	*x = CellResponse{}
-	mi := &file_host_agent_proto_msgTypes[5]
+	mi := &file_proto_host_agent_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -345,7 +353,7 @@ func (x *CellResponse) String() string {
 func (*CellResponse) ProtoMessage() {}
 
 func (x *CellResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[5]
+	mi := &file_proto_host_agent_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -358,7 +366,7 @@ func (x *CellResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CellResponse.ProtoReflect.Descriptor instead.
 func (*CellResponse) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{5}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CellResponse) GetCellId() string {
@@ -404,7 +412,7 @@ type CellStatus struct {
 
 func (x *CellStatus) Reset() {
 	*x = CellStatus{}
-	mi := &file_host_agent_proto_msgTypes[6]
+	mi := &file_proto_host_agent_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -416,7 +424,7 @@ func (x *CellStatus) String() string {
 func (*CellStatus) ProtoMessage() {}
 
 func (x *CellStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[6]
+	mi := &file_proto_host_agent_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -429,7 +437,7 @@ func (x *CellStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CellStatus.ProtoReflect.Descriptor instead.
 func (*CellStatus) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{6}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CellStatus) GetCellId() string {
@@ -492,7 +500,7 @@ type CellResourceUsage struct {
 
 func (x *CellResourceUsage) Reset() {
 	*x = CellResourceUsage{}
-	mi := &file_host_agent_proto_msgTypes[7]
+	mi := &file_proto_host_agent_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -504,7 +512,7 @@ func (x *CellResourceUsage) String() string {
 func (*CellResourceUsage) ProtoMessage() {}
 
 func (x *CellResourceUsage) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[7]
+	mi := &file_proto_host_agent_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +525,7 @@ func (x *CellResourceUsage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CellResourceUsage.ProtoReflect.Descriptor instead.
 func (*CellResourceUsage) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{7}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CellResourceUsage) GetCpuPercent() float64 {
@@ -552,7 +560,7 @@ type SnapshotResponse struct {
 
 func (x *SnapshotResponse) Reset() {
 	*x = SnapshotResponse{}
-	mi := &file_host_agent_proto_msgTypes[8]
+	mi := &file_proto_host_agent_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -564,7 +572,7 @@ func (x *SnapshotResponse) String() string {
 func (*SnapshotResponse) ProtoMessage() {}
 
 func (x *SnapshotResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[8]
+	mi := &file_proto_host_agent_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -577,7 +585,7 @@ func (x *SnapshotResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapshotResponse.ProtoReflect.Descriptor instead.
 func (*SnapshotResponse) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{8}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SnapshotResponse) GetCellId() string {
@@ -610,7 +618,7 @@ type ListCellsResponse struct {
 
 func (x *ListCellsResponse) Reset() {
 	*x = ListCellsResponse{}
-	mi := &file_host_agent_proto_msgTypes[9]
+	mi := &file_proto_host_agent_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -622,7 +630,7 @@ func (x *ListCellsResponse) String() string {
 func (*ListCellsResponse) ProtoMessage() {}
 
 func (x *ListCellsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[9]
+	mi := &file_proto_host_agent_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -635,7 +643,7 @@ func (x *ListCellsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCellsResponse.ProtoReflect.Descriptor instead.
 func (*ListCellsResponse) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{9}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListCellsResponse) GetCells() []*CellStatus {
@@ -662,7 +670,7 @@ type HostMetrics struct {
 
 func (x *HostMetrics) Reset() {
 	*x = HostMetrics{}
-	mi := &file_host_agent_proto_msgTypes[10]
+	mi := &file_proto_host_agent_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -674,7 +682,7 @@ func (x *HostMetrics) String() string {
 func (*HostMetrics) ProtoMessage() {}
 
 func (x *HostMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_host_agent_proto_msgTypes[10]
+	mi := &file_proto_host_agent_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -687,7 +695,7 @@ func (x *HostMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HostMetrics.ProtoReflect.Descriptor instead.
 func (*HostMetrics) Descriptor() ([]byte, []int) {
-	return file_host_agent_proto_rawDescGZIP(), []int{10}
+	return file_proto_host_agent_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *HostMetrics) GetCpuTotalMillicores() int32 {
@@ -753,11 +761,11 @@ func (x *HostMetrics) GetCachedCustomers() []string {
 	return nil
 }
 
-var File_host_agent_proto protoreflect.FileDescriptor
+var File_proto_host_agent_proto protoreflect.FileDescriptor
 
-const file_host_agent_proto_rawDesc = "" +
+const file_proto_host_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x10host_agent.proto\x12\x10oncell.hostagent\"\a\n" +
+	"\x16proto/host_agent.proto\x12\x10oncell.hostagent\"\a\n" +
 	"\x05Empty\"!\n" +
 	"\x06CellId\x12\x17\n" +
 	"\acell_id\x18\x01 \x01(\tR\x06cellId\"\xc4\x01\n" +
@@ -770,7 +778,7 @@ const file_host_agent_proto_rawDesc = "" +
 	"\anetwork\x18\x05 \x01(\v2\x1f.oncell.hostagent.NetworkConfigR\anetwork\"=\n" +
 	"\rNetworkConfig\x12\x16\n" +
 	"\x06egress\x18\x01 \x01(\tR\x06egress\x12\x14\n" +
-	"\x05allow\x18\x02 \x03(\tR\x05allow\"\xcd\x03\n" +
+	"\x05allow\x18\x02 \x03(\tR\x05allow\"\xeb\x03\n" +
 	"\x11CreateCellRequest\x12\x17\n" +
 	"\acell_id\x18\x01 \x01(\tR\x06cellId\x12\x1f\n" +
 	"\vcustomer_id\x18\x02 \x01(\tR\n" +
@@ -780,7 +788,8 @@ const file_host_agent_proto_rawDesc = "" +
 	"\vagent_image\x18\x05 \x01(\tR\n" +
 	"agentImage\x12G\n" +
 	"\x06config\x18\x06 \x03(\v2/.oncell.hostagent.CreateCellRequest.ConfigEntryR\x06config\x12J\n" +
-	"\asecrets\x18\a \x03(\v20.oncell.hostagent.CreateCellRequest.SecretsEntryR\asecrets\x1a9\n" +
+	"\asecrets\x18\a \x03(\v20.oncell.hostagent.CreateCellRequest.SecretsEntryR\asecrets\x12\x1c\n" +
+	"\tpermanent\x18\b \x01(\bR\tpermanent\x1a9\n" +
 	"\vConfigEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a:\n" +
@@ -839,19 +848,19 @@ const file_host_agent_proto_rawDesc = "" +
 	"\x0eGetHostMetrics\x12\x17.oncell.hostagent.Empty\x1a\x1d.oncell.hostagent.HostMetricsB:Z8github.com/oncellai/control-plane/internal/hostclient/pbb\x06proto3"
 
 var (
-	file_host_agent_proto_rawDescOnce sync.Once
-	file_host_agent_proto_rawDescData []byte
+	file_proto_host_agent_proto_rawDescOnce sync.Once
+	file_proto_host_agent_proto_rawDescData []byte
 )
 
-func file_host_agent_proto_rawDescGZIP() []byte {
-	file_host_agent_proto_rawDescOnce.Do(func() {
-		file_host_agent_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_host_agent_proto_rawDesc), len(file_host_agent_proto_rawDesc)))
+func file_proto_host_agent_proto_rawDescGZIP() []byte {
+	file_proto_host_agent_proto_rawDescOnce.Do(func() {
+		file_proto_host_agent_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_host_agent_proto_rawDesc), len(file_proto_host_agent_proto_rawDesc)))
 	})
-	return file_host_agent_proto_rawDescData
+	return file_proto_host_agent_proto_rawDescData
 }
 
-var file_host_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
-var file_host_agent_proto_goTypes = []any{
+var file_proto_host_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_proto_host_agent_proto_goTypes = []any{
 	(*Empty)(nil),             // 0: oncell.hostagent.Empty
 	(*CellId)(nil),            // 1: oncell.hostagent.CellId
 	(*CellSpec)(nil),          // 2: oncell.hostagent.CellSpec
@@ -866,7 +875,7 @@ var file_host_agent_proto_goTypes = []any{
 	nil,                       // 11: oncell.hostagent.CreateCellRequest.ConfigEntry
 	nil,                       // 12: oncell.hostagent.CreateCellRequest.SecretsEntry
 }
-var file_host_agent_proto_depIdxs = []int32{
+var file_proto_host_agent_proto_depIdxs = []int32{
 	3,  // 0: oncell.hostagent.CellSpec.network:type_name -> oncell.hostagent.NetworkConfig
 	2,  // 1: oncell.hostagent.CreateCellRequest.spec:type_name -> oncell.hostagent.CellSpec
 	11, // 2: oncell.hostagent.CreateCellRequest.config:type_name -> oncell.hostagent.CreateCellRequest.ConfigEntry
@@ -899,26 +908,26 @@ var file_host_agent_proto_depIdxs = []int32{
 	0,  // [0:7] is the sub-list for field type_name
 }
 
-func init() { file_host_agent_proto_init() }
-func file_host_agent_proto_init() {
-	if File_host_agent_proto != nil {
+func init() { file_proto_host_agent_proto_init() }
+func file_proto_host_agent_proto_init() {
+	if File_proto_host_agent_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_host_agent_proto_rawDesc), len(file_host_agent_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_host_agent_proto_rawDesc), len(file_proto_host_agent_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_host_agent_proto_goTypes,
-		DependencyIndexes: file_host_agent_proto_depIdxs,
-		MessageInfos:      file_host_agent_proto_msgTypes,
+		GoTypes:           file_proto_host_agent_proto_goTypes,
+		DependencyIndexes: file_proto_host_agent_proto_depIdxs,
+		MessageInfos:      file_proto_host_agent_proto_msgTypes,
 	}.Build()
-	File_host_agent_proto = out.File
-	file_host_agent_proto_goTypes = nil
-	file_host_agent_proto_depIdxs = nil
+	File_proto_host_agent_proto = out.File
+	file_proto_host_agent_proto_goTypes = nil
+	file_proto_host_agent_proto_depIdxs = nil
 }

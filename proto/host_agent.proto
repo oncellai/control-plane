@@ -41,6 +41,7 @@ message CreateCellRequest {
   string agent_image = 5;
   map<string, string> config = 6;   // customer config
   map<string, string> secrets = 7;  // encrypted secrets
+  bool permanent = 8;               // auto-restart on crash if true
 }
 
 message CellResponse {

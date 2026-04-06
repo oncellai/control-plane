@@ -42,10 +42,11 @@ func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) createCell(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		CellID      string `json:"cell_id"`
-		CustomerID  string `json:"customer_id"`
-		DeveloperID string `json:"developer_id"`
-		Permanent   bool   `json:"permanent"`
+		CellID      string            `json:"cell_id"`
+		CustomerID  string            `json:"customer_id"`
+		DeveloperID string            `json:"developer_id"`
+		Permanent   bool              `json:"permanent"`
+		Secrets     map[string]string `json:"secrets"`
 		Spec        *struct {
 			CPUMillicores int32 `json:"cpu_millicores"`
 			MemoryMB      int32 `json:"memory_mb"`
@@ -67,7 +68,7 @@ func (h *Handler) createCell(w http.ResponseWriter, r *http.Request) {
 		if req.Spec.StorageGB > 0 { storageGB = req.Spec.StorageGB }
 	}
 
-	result, err := h.cm.Create(r.Context(), req.CellID, req.CustomerID, req.DeveloperID, cpuMillicores, memoryMB, storageGB, req.Permanent)
+	result, err := h.cm.Create(r.Context(), req.CellID, req.CustomerID, req.DeveloperID, cpuMillicores, memoryMB, storageGB, req.Permanent, req.Secrets)
 	if err != nil {
 		slog.Error("create cell failed", "err", err)
 		writeJSON(w, 500, map[string]string{"error": err.Error()})
