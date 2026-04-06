@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"log/slog"
+	"sync"
 
 	"github.com/oncellai/control-plane/internal/router"
 )
@@ -15,23 +16,37 @@ type Host struct {
 
 type Scheduler struct {
 	router *router.Router
+	mu     sync.RWMutex
 	hosts  []Host
 }
 
 func New(r *router.Router) *Scheduler {
-	// MVP: single host, configured statically
-	// Later: discover hosts from Redis heartbeats
-	return &Scheduler{
-		router: r,
-		hosts: []Host{
-			{ID: "host-1", Address: "localhost", GRPCPort: 50051},
-		},
+	return &Scheduler{router: r}
+}
+
+// RegisterHost adds or updates a host. Called by the Host Agent on startup and every 30s.
+func (s *Scheduler) RegisterHost(id, address string, grpcPort int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, h := range s.hosts {
+		if h.ID == id {
+			s.hosts[i].Address = address
+			s.hosts[i].GRPCPort = grpcPort
+			return
+		}
 	}
+
+	s.hosts = append(s.hosts, Host{ID: id, Address: address, GRPCPort: grpcPort})
+	slog.Info("scheduler: new host registered", "id", id, "address", address, "total", len(s.hosts))
 }
 
 // PickHost selects the best host for a new cell.
 // Prefers hosts with existing NVMe cache for the customer.
 func (s *Scheduler) PickHost(ctx context.Context, cellID string) (*Host, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	if len(s.hosts) == 0 {
 		return nil, ErrNoHosts
 	}

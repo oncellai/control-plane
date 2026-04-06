@@ -30,6 +30,7 @@ func NewHandler(cm *cellmanager.CellManager, r *router.Router, s *scheduler.Sche
 	mux.HandleFunc("POST /cells/heartbeat/{id}", h.heartbeat)
 	mux.HandleFunc("POST /cells/reclaim", h.forceReclaim)
 	mux.HandleFunc("GET /cells/counts", h.cellCounts)
+	mux.HandleFunc("POST /hosts/register", h.registerHost)
 
 	return mux
 }
@@ -147,6 +148,30 @@ func (h *Handler) forceReclaim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]string{"reclaimed_cell_id": reclaimedID})
+}
+
+func (h *Handler) registerHost(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		HostID   string `json:"host_id"`
+		Address  string `json:"address"`
+		GRPCPort int    `json:"grpc_port"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, 400, map[string]string{"error": "invalid json"})
+		return
+	}
+
+	if req.HostID == "" || req.Address == "" {
+		writeJSON(w, 400, map[string]string{"error": "host_id and address required"})
+		return
+	}
+	if req.GRPCPort == 0 {
+		req.GRPCPort = 50051
+	}
+
+	h.sched.RegisterHost(req.HostID, req.Address, req.GRPCPort)
+	slog.Info("host registered", "host_id", req.HostID, "address", req.Address, "port", req.GRPCPort)
+	writeJSON(w, 200, map[string]string{"ok": "true"})
 }
 
 // cellCounts returns active/paused cell counts per developer for billing metering.
