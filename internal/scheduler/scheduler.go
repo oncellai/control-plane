@@ -36,6 +36,11 @@ func (s *Scheduler) PickHost(ctx context.Context, cellID string) (*Host, error) 
 		return nil, ErrNoHosts
 	}
 
+	// Without router (testing or early startup), return first host
+	if s.router == nil {
+		return &s.hosts[0], nil
+	}
+
 	// Check if any host has cached data for this cell
 	for _, host := range s.hosts {
 		metrics, err := s.router.GetHostMetrics(ctx, host.ID)
