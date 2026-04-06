@@ -97,6 +97,55 @@ func (r *Router) GetActiveCells(ctx context.Context) ([]string, error) {
 	return cellIDs, iter.Err()
 }
 
+// DeveloperCounts holds active/paused cell counts for billing.
+type DeveloperCounts struct {
+	DeveloperID string `json:"developer_id"`
+	Active      int    `json:"active"`
+	Paused      int    `json:"paused"`
+}
+
+// GetCellCountsByDeveloper returns active/paused cell counts grouped by developer.
+// Cell IDs encode developer: "dev-abc123--customer-id"
+func (r *Router) GetCellCountsByDeveloper(ctx context.Context) ([]DeveloperCounts, error) {
+	counts := map[string]*DeveloperCounts{} // developer_id → counts
+
+	iter := r.rdb.Scan(ctx, 0, "cell:*:route", 1000).Iterator()
+	for iter.Next(ctx) {
+		data, err := r.rdb.Get(ctx, iter.Val()).Bytes()
+		if err != nil {
+			continue
+		}
+		var route CellRoute
+		json.Unmarshal(data, &route)
+
+		// Extract developer_id from cell_id: "dev-abc123--customer-id"
+		devID := route.CellID
+		if idx := len(devID); idx > 0 {
+			for i, c := range devID {
+				if c == '-' && i > 0 && i+1 < len(devID) && devID[i+1] == '-' {
+					devID = devID[:i]
+					break
+				}
+			}
+		}
+
+		if counts[devID] == nil {
+			counts[devID] = &DeveloperCounts{DeveloperID: devID}
+		}
+		if route.Status == "active" {
+			counts[devID].Active++
+		} else if route.Status == "paused" {
+			counts[devID].Paused++
+		}
+	}
+
+	result := make([]DeveloperCounts, 0, len(counts))
+	for _, c := range counts {
+		result = append(result, *c)
+	}
+	return result, iter.Err()
+}
+
 func cellKey(cellID string) string       { return fmt.Sprintf("cell:%s:route", cellID) }
 func lastActiveKey(cellID string) string  { return fmt.Sprintf("cell:%s:last_active", cellID) }
 func hostMetricsKey(hostID string) string { return fmt.Sprintf("host:%s:metrics", hostID) }

@@ -29,6 +29,7 @@ func NewHandler(cm *cellmanager.CellManager, r *router.Router, s *scheduler.Sche
 	mux.HandleFunc("GET /cells/route/{customer_id}", h.cellRoute)
 	mux.HandleFunc("POST /cells/heartbeat/{id}", h.heartbeat)
 	mux.HandleFunc("POST /cells/reclaim", h.forceReclaim)
+	mux.HandleFunc("GET /cells/counts", h.cellCounts)
 
 	return mux
 }
@@ -146,6 +147,16 @@ func (h *Handler) forceReclaim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]string{"reclaimed_cell_id": reclaimedID})
+}
+
+// cellCounts returns active/paused cell counts per developer for billing metering.
+func (h *Handler) cellCounts(w http.ResponseWriter, r *http.Request) {
+	counts, err := h.router.GetCellCountsByDeveloper(r.Context())
+	if err != nil {
+		writeJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, 200, counts)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
