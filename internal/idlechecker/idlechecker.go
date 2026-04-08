@@ -13,7 +13,7 @@ import (
 // Tier-based idle timeouts. The cell's tier is embedded in the route metadata.
 // Free tier cells get evicted aggressively to minimize cost at scale.
 var tierTimeouts = map[string]time.Duration{
-	"free":        5 * time.Minute,
+	"free":        10 * time.Minute,
 	"starter":     30 * time.Minute,
 	"standard":    2 * time.Hour,
 	"performance": 6 * time.Hour,
