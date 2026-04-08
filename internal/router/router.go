@@ -15,6 +15,7 @@ type CellRoute struct {
 	Status    string `json:"status"`
 	CellID    string `json:"cell_id"`
 	Permanent bool   `json:"permanent"`
+	Tier      string `json:"tier"`
 }
 
 type HostMetrics struct {

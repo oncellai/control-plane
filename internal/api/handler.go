@@ -46,6 +46,7 @@ func (h *Handler) createCell(w http.ResponseWriter, r *http.Request) {
 		CustomerID  string            `json:"customer_id"`
 		DeveloperID string            `json:"developer_id"`
 		Permanent   bool              `json:"permanent"`
+		Image       string            `json:"image"`
 		Secrets     map[string]string `json:"secrets"`
 		Spec        *struct {
 			CPUMillicores int32 `json:"cpu_millicores"`
@@ -68,7 +69,12 @@ func (h *Handler) createCell(w http.ResponseWriter, r *http.Request) {
 		if req.Spec.StorageGB > 0 { storageGB = req.Spec.StorageGB }
 	}
 
-	result, err := h.cm.Create(r.Context(), req.CellID, req.CustomerID, req.DeveloperID, cpuMillicores, memoryMB, storageGB, req.Permanent, req.Secrets)
+	image := req.Image
+	if image == "" {
+		image = "default"
+	}
+
+	result, err := h.cm.Create(r.Context(), req.CellID, req.CustomerID, req.DeveloperID, cpuMillicores, memoryMB, storageGB, image, req.Permanent, req.Secrets)
 	if err != nil {
 		slog.Error("create cell failed", "err", err)
 		writeJSON(w, 500, map[string]string{"error": err.Error()})

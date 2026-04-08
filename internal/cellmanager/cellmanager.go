@@ -1,9 +1,13 @@
 package cellmanager
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/oncellai/control-plane/internal/hostclient"
@@ -33,7 +37,7 @@ type CreateResult struct {
 	Status string `json:"status"`
 }
 
-func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developerID string, cpuMillicores, memoryMB, storageGB int32, permanent bool, secrets map[string]string) (*CreateResult, error) {
+func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developerID string, cpuMillicores, memoryMB, storageGB int32, image string, permanent bool, secrets map[string]string) (*CreateResult, error) {
 	// Pick a host
 	host, err := cm.scheduler.PickHost(ctx, cellID)
 	if err != nil {
@@ -64,7 +68,7 @@ func (cm *CellManager) Create(ctx context.Context, cellID, customerID, developer
 			MemoryMb:      memoryMB,
 			StorageGb:     storageGB,
 		},
-		AgentImage: "default",
+		AgentImage: image,
 		Permanent:  permanent,
 		Secrets:    secrets,
 	})
@@ -115,6 +119,16 @@ func (cm *CellManager) Pause(ctx context.Context, cellID string) error {
 	route.Status = "paused"
 	cm.router.SetRoute(ctx, cellID, *route)
 
+	// Notify API Server to update DynamoDB (best effort)
+	go func() {
+		apiURL := os.Getenv("API_SERVER_URL")
+		if apiURL == "" {
+			return
+		}
+		body, _ := json.Marshal(map[string]string{"cell_id": cellID, "status": "paused"})
+		http.Post(apiURL+"/internal/cell-status", "application/json", bytes.NewReader(body))
+	}()
+
 	slog.Info("cell paused", "cell_id", cellID)
 	return nil
 }
@@ -141,6 +155,16 @@ func (cm *CellManager) Resume(ctx context.Context, cellID string) (*CreateResult
 	route.Port = int(resp.Port)
 	cm.router.SetRoute(ctx, cellID, *route)
 	cm.router.SetLastActive(ctx, cellID)
+
+	// Notify API Server to update DynamoDB (best effort)
+	go func() {
+		apiURL := os.Getenv("API_SERVER_URL")
+		if apiURL == "" {
+			return
+		}
+		body, _ := json.Marshal(map[string]string{"cell_id": cellID, "status": "active"})
+		http.Post(apiURL+"/internal/cell-status", "application/json", bytes.NewReader(body))
+	}()
 
 	slog.Info("cell resumed", "cell_id", cellID, "port", resp.Port)
 
